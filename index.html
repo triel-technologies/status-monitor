@@ -1,0 +1,356 @@
+
+
+
+    
+    
+    LeonXLab Status Monitor
+    
+    
+        @keyframes pulse-ring {
+            0% { transform: scale(0.95); opacity: 1; }
+            50% { transform: scale(1.05); opacity: 0.7; }
+            100% { transform: scale(0.95); opacity: 1; }
+        }
+        .pulse-animation { animation: pulse-ring 2s ease-in-out infinite; }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .fade-in { animation: fadeIn 0.5s ease-out forwards; }
+    
+
+
+    
+        
+            
+                LeonXLab Status
+            
+            Real-time monitoring untuk semua layanan kami
+            
+                
+                Terakhir diperbarui: --:--:--
+            
+        
+
+        
+            
+                
+                    
+                        
+                            
+                        
+                    
+                    
+                        Semua Sistem Operasional
+                        0 dari 0 layanan berjalan normal
+                    
+                
+                
+                    100%
+                    Uptime
+                
+            
+        
+
+        
+
+        
+            Layanan
+            
+        
+
+        
+            
+                
+                    Tentang
+                    
+                        LeonXLab Status menyediakan informasi real-time mengenai ketersediaan dan performa layanan kami.
+                    
+                
+                
+                
+                    Kontak
+                    
+                        
+                            
+                                
+                            
+                            leonard.manurung@leonxlab.digital
+                        
+                        
+                            
+                                
+                            
+                            github.com/leonxlab
+                        
+                    
+                
+                
+                
+                    Pembaruan
+                    Refresh otomatis setiap 60 detik
+                    
+                        Refresh Manual
+                    
+                
+            
+            
+            
+                &copy; 2024 LeonXLab. All rights reserved. Powered by Vercel.
+            
+        
+    
+
+    
+        // Load website configuration dari API (environment variables)
+        let websites = [];
+        let servicesData = {};
+        let activeIncidents = [];
+
+        // Fetch config dari environment variables
+        async function loadConfig() {
+            try {
+                const response = await fetch('/api/config');
+                const data = await response.json();
+                websites = data.websites;
+                
+                // Jika tidak ada config dari env, tampilkan pesan
+                if (websites.length === 0) {
+                    document.getElementById('servicesList').innerHTML = `
+                        
+                            
+                                
+                            
+                            Environment Variables Belum Di-Set
+                            Silakan set environment variables di Vercel Dashboard.
+                            
+                                Lihat dokumentasi →
+                            
+                        
+                    `;
+                    return;
+                }
+                
+                // Start monitoring setelah config loaded
+                updateAllStatus();
+            } catch (error) {
+                console.error('Failed to load config:', error);
+                document.getElementById('servicesList').innerHTML = `
+                    
+                        Error Loading Configuration
+                        ${error.message}
+                    
+                `;
+            }
+        }
+
+        // Fungsi untuk check status via Vercel API
+        async function checkWebsiteStatus(website) {
+            if (!website.checkUrl) {
+                return { status: 'maintenance', responseTime: 0, uptime: 0 };
+            }
+
+            try {
+                const response = await fetch(`/api/check-status?url=${encodeURIComponent(website.checkUrl)}`);
+                const data = await response.json();
+                return data;
+            } catch (error) {
+                return { status: 'down', responseTime: 0, uptime: 0 };
+            }
+        }
+
+        function renderActiveIncidents() {
+            const container = document.getElementById('activeIncidents');
+            if (activeIncidents.length === 0) {
+                container.innerHTML = '';
+                return;
+            }
+            
+            const incidentsHTML = `
+                
+                    Active Incidents
+                    
+                        ${activeIncidents.map(incident => `
+                            
+                                
+                                    
+                                        ${incident.title}
+                                        
+                                            Opened at ${incident.opened.toLocaleDateString('en-US', { 
+                                                year: 'numeric', 
+                                                month: 'numeric', 
+                                                day: 'numeric' 
+                                            })}, ${incident.opened.toLocaleTimeString('en-US', { 
+                                                hour: 'numeric', 
+                                                minute: '2-digit', 
+                                                second: '2-digit',
+                                                hour12: true 
+                                            })} with ${incident.posts} posts
+                                        
+                                    
+                                    
+                                        Incident report
+                                        
+                                            
+                                        
+                                    
+                                
+                            
+                        `).join('')}
+                    
+                
+            `;
+            container.innerHTML = incidentsHTML;
+        }
+
+        function getStatusBadge(status) {
+            const badges = {
+                operational: '● Operational',
+                slow: '● Slow Response',
+                down: '● Down'
+            };
+            return badges[status] || badges.operational;
+        }
+
+        function renderService(website, data) {
+            const statusColor = data.status === 'operational' ? 'emerald' : data.status === 'slow' ? 'yellow' : 'red';
+            const isMaintenance = website.maintenance || false;
+            
+            return `
+                
+                    
+                        
+                            
+                                
+                            
+                            
+                                ${website.name}
+                                ${website.category}
+                            
+                        
+                        ${isMaintenance ? '● Maintenance' : getStatusBadge(data.status)}
+                    
+                    
+                    
+                        
+                            Response Time
+                            ${isMaintenance ? 'N/A' : data.responseTime + 'ms'}
+                        
+                        
+                            Uptime (30d)
+                            ${isMaintenance ? 'N/A' : data.uptime + '%'}
+                        
+                        
+                            Last Check
+                            ${isMaintenance ? 'N/A' : 'Now'}
+                        
+                    
+                    
+                    
+                        
+                            Website:
+                            ${website.url}
+                        
+                        
+                            Server IP:
+                            ${website.ip}
+                            ${website.checkUrl ? '(monitored)' : ''}
+                        
+                    
+                    
+                    
+                        ${isMaintenance ? 
+                            Array(30).fill(0).map(() => '').join('') :
+                            Array(30).fill(0).map(() => {
+                                const height = Math.random() > 0.05 ? 'h-full' : 'h-1/2';
+                                const color = Math.random() > 0.05 ? `bg-${statusColor}-500` : 'bg-red-500';
+                                return ``;
+                            }).join('')
+                        }
+                    
+                
+            `;
+        }
+
+        function updateOverallStatusDisplay(operationalCount, totalServices) {
+            const overallStatusCard = document.getElementById('overallStatusCard');
+            const overallStatusIcon = document.getElementById('overallStatusIcon');
+            const overallStatus = document.getElementById('overallStatus');
+            
+            if (operationalCount === totalServices) {
+                overallStatusCard.className = 'bg-gradient-to-r from-emerald-500/20 to-emerald-600/20 border border-emerald-500/30 rounded-2xl p-6 mb-8 backdrop-blur-sm fade-in';
+                overallStatusIcon.innerHTML = `
+                    
+                        
+                    
+                `;
+                overallStatus.className = 'text-2xl font-bold text-emerald-400';
+                overallStatus.textContent = 'Semua Sistem Operasional';
+            } else if (operationalCount > 0) {
+                overallStatusCard.className = 'bg-gradient-to-r from-yellow-500/20 to-yellow-600/20 border border-yellow-500/30 rounded-2xl p-6 mb-8 backdrop-blur-sm fade-in';
+                overallStatusIcon.innerHTML = `
+                    
+                        
+                    
+                `;
+                overallStatus.className = 'text-2xl font-bold text-yellow-400';
+                overallStatus.textContent = 'Beberapa Sistem Mengalami Gangguan';
+            } else {
+                overallStatusCard.className = 'bg-gradient-to-r from-red-500/20 to-red-600/20 border border-red-500/30 rounded-2xl p-6 mb-8 backdrop-blur-sm fade-in';
+                overallStatusIcon.innerHTML = `
+                    
+                        
+                    
+                `;
+                overallStatus.className = 'text-2xl font-bold text-red-400';
+                overallStatus.textContent = 'Sistem Mengalami Gangguan';
+            }
+        }
+
+        async function updateAllStatus() {
+            const listContainer = document.getElementById('servicesList');
+            listContainer.innerHTML = 'Memeriksa status layanan...';
+            
+            let operationalCount = 0;
+            let totalUptime = 0;
+            let activeServicesCount = 0;
+            
+            for (const website of websites) {
+                if (website.maintenance) {
+                    servicesData[website.url] = { status: 'maintenance', responseTime: 0, uptime: 0 };
+                    continue;
+                }
+                
+                const data = await checkWebsiteStatus(website);
+                servicesData[website.url] = data;
+                
+                activeServicesCount++;
+                if (data.status === 'operational') operationalCount++;
+                totalUptime += data.uptime;
+            }
+            
+            renderActiveIncidents();
+            
+            listContainer.innerHTML = websites.map(website => 
+                renderService(website, servicesData[website.url])
+            ).join('');
+            
+            const avgUptime = activeServicesCount > 0 ? (totalUptime / activeServicesCount).toFixed(1) : 100;
+            document.getElementById('operationalCount').textContent = 
+                `${operationalCount} dari ${activeServicesCount} layanan aktif berjalan normal`;
+            document.getElementById('overallUptime').textContent = `${avgUptime}%`;
+            
+            updateOverallStatusDisplay(operationalCount, activeServicesCount);
+            
+            const now = new Date();
+            document.getElementById('lastUpdate').textContent = 
+                now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        }
+
+        // Load config dan start monitoring
+        loadConfig();
+        
+        // Auto refresh setiap 60 detik
+        setInterval(updateAllStatus, 60000);
+    
