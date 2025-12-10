@@ -1,6 +1,5 @@
 
 
-
     
     
     LeonXLab Status Monitor
@@ -252,11 +251,13 @@
                             Website:
                             ${website.url}
                         
+                        ${website.showIp !== false && website.ip ? `
                         
                             Server IP:
                             ${website.ip}
                             ${website.checkUrl ? '(monitored)' : ''}
                         
+                        ` : ''}
                     
                     
                     
@@ -353,4 +354,3 @@
         
         // Auto refresh setiap 60 detik
         setInterval(updateAllStatus, 60000);
-    
