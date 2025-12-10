@@ -1,3 +1,5 @@
+
+// API endpoint untuk get website configuration dari env variables
 module.exports = async (req, res) => {
   // Enable CORS
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -17,10 +19,11 @@ module.exports = async (req, res) => {
     const site = {
       name: process.env[`SITE_${i}_NAME`],
       url: process.env[`SITE_${i}_URL`],
-      ip: process.env[`SITE_${i}_IP`],
+      ip: process.env[`SITE_${i}_IP`] || null, // Boleh kosong
       checkUrl: process.env[`SITE_${i}_CHECK_URL`] || null,
       category: process.env[`SITE_${i}_CATEGORY`] || 'Service',
-      maintenance: process.env[`SITE_${i}_MAINTENANCE`] === 'true'
+      maintenance: process.env[`SITE_${i}_MAINTENANCE`] === 'true',
+      showIp: process.env[`SITE_${i}_SHOW_IP`] !== 'false' // Default true, kecuali explicitly false
     };
     websites.push(site);
     i++;
