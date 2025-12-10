@@ -1,0 +1,13 @@
+{
+  "name": "leonxlab-status-monitor",
+  "version": "1.0.0",
+  "description": "Real-time status monitoring for LeonXLab services",
+  "main": "index.js",
+  "scripts": {
+    "dev": "vercel dev",
+    "deploy": "vercel --prod"
+  },
+  "keywords": ["status", "monitoring", "uptime"],
+  "author": "LeonXLab",
+  "license": "MIT"
+}
